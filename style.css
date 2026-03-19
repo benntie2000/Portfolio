@@ -60,15 +60,54 @@
     --radius-xl: 16px;
 }
 
-/* Mode clair (optionnel) */
+/* Mode clair */
 body.light-mode {
-    --bg-primary: #f7fafc;
-    --bg-secondary: #ffffff;
+    /* Couleurs de fond inversées */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f7fafc;
     --bg-tertiary: #edf2f7;
-    --bg-card: rgba(255, 255, 255, 0.9);
+    --bg-card: rgba(255, 255, 255, 0.95);
+    
+    /* Couleurs de texte inversées */
     --text-primary: #1a202c;
-    --text-secondary: #4a5568;
-    --text-muted: #718096;
+    --text-secondary: #2d3748;
+    --text-muted: #4a5568;
+    
+    /* Garder les couleurs cyber en mode clair */
+    --primary-color: #0088cc;
+    --primary-dark: #006699;
+    --primary-light: #00aaff;
+    --secondary-color: #6b21e0;
+    --accent-color: #e0218a;
+    
+    /* Ombres adaptées au mode clair */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.15);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.2);
+    --shadow-glow: 0 0 20px rgba(0, 136, 204, 0.3);
+}
+
+/* Ajustements spécifiques au mode clair */
+body.light-mode .navbar {
+    background: rgba(255, 255, 255, 0.95);
+    border-bottom-color: rgba(0, 136, 204, 0.2);
+}
+
+body.light-mode .loader-wrapper {
+    background: #ffffff;
+}
+
+body.light-mode #matrix-canvas {
+    opacity: 0.03;
+}
+
+body.light-mode .cursor-dot {
+    background: var(--primary-color);
+    box-shadow: 0 0 10px var(--primary-color);
+}
+
+body.light-mode .cursor-outline {
+    border-color: var(--primary-color);
 }
 
 /* ========================================
@@ -91,7 +130,18 @@ body {
     color: var(--text-primary);
     line-height: 1.6;
     overflow-x: hidden;
-    cursor: none;
+    cursor: none; /* Masquer le curseur par défaut */
+}
+
+/* Réactiver le curseur normal sur mobile */
+@media (max-width: 968px) {
+    body {
+        cursor: auto !important;
+    }
+    .cursor-dot,
+    .cursor-outline {
+        display: none !important;
+    }
 }
 
 /* Curseur personnalisé */
@@ -102,8 +152,7 @@ body {
     top: 0;
     left: 0;
     z-index: 10000;
-    mix-blend-mode: difference;
-    transition: transform 0.15s ease;
+    will-change: transform;
 }
 
 .cursor-dot {
@@ -111,7 +160,7 @@ body {
     height: 8px;
     background: var(--primary-color);
     border-radius: 50%;
-    transform: translate(-50%, -50%);
+    transition: transform 0.15s ease, background-color 0.3s ease;
 }
 
 .cursor-outline {
@@ -119,15 +168,7 @@ body {
     height: 32px;
     border: 2px solid var(--primary-color);
     border-radius: 50%;
-    transform: translate(-50%, -50%);
-    transition: width 0.3s, height 0.3s, border-color 0.3s;
-}
-
-a:hover ~ .cursor-outline,
-button:hover ~ .cursor-outline {
-    width: 48px;
-    height: 48px;
-    border-color: var(--accent-color);
+    transition: width 0.3s ease, height 0.3s ease, border-color 0.3s ease;
 }
 
 /* ========================================
@@ -242,6 +283,28 @@ button:hover ~ .cursor-outline {
 @keyframes blink {
     0%, 50% { opacity: 1; }
     51%, 100% { opacity: 0; }
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
 }
 
 /* ========================================
