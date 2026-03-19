@@ -50,48 +50,61 @@ const initCursor = () => {
     
     if (!cursorDot || !cursorOutline) return;
     
-    let mouseX = 0, mouseY = 0;
-    let dotX = 0, dotY = 0;
-    let outlineX = 0, outlineY = 0;
+    // Vérifier si on est sur mobile
+    if (window.innerWidth <= 968) {
+        cursorDot.style.display = 'none';
+        cursorOutline.style.display = 'none';
+        return;
+    }
     
+    let mouseX = 0, mouseY = 0;
+    
+    // Suivre la position de la souris
     document.addEventListener('mousemove', (e) => {
         mouseX = e.clientX;
         mouseY = e.clientY;
+        
+        // Mettre à jour la position du curseur instantanément
+        cursorDot.style.left = mouseX + 'px';
+        cursorDot.style.top = mouseY + 'px';
+        cursorDot.style.transform = 'translate(-50%, -50%)';
     });
     
-    const animateCursor = () => {
-        // Dot suit la souris instantanément
-        dotX = mouseX;
-        dotY = mouseY;
-        
-        // Outline suit avec un léger délai (effet smooth)
+    // Animation du outline avec un léger délai
+    let outlineX = 0, outlineY = 0;
+    
+    const animateOutline = () => {
         const delay = 0.15;
         outlineX += (mouseX - outlineX) * delay;
         outlineY += (mouseY - outlineY) * delay;
         
-        cursorDot.style.left = dotX + 'px';
-        cursorDot.style.top = dotY + 'px';
         cursorOutline.style.left = outlineX + 'px';
         cursorOutline.style.top = outlineY + 'px';
+        cursorOutline.style.transform = 'translate(-50%, -50%)';
         
-        requestAnimationFrame(animateCursor);
+        requestAnimationFrame(animateOutline);
     };
     
-    animateCursor();
+    animateOutline();
     
     // Effet hover sur les éléments cliquables
-    const clickables = document.querySelectorAll('a, button, .project-card, .tool-item, .skill-card');
+    const clickables = document.querySelectorAll('a, button, .project-card, .tool-item, .skill-card, .filter-btn, input, textarea');
+    
     clickables.forEach(el => {
         el.addEventListener('mouseenter', () => {
-            cursorOutline.style.width = '48px';
-            cursorOutline.style.height = '48px';
+            cursorOutline.style.width = '50px';
+            cursorOutline.style.height = '50px';
             cursorOutline.style.borderColor = 'var(--accent-color)';
+            cursorDot.style.background = 'var(--accent-color)';
+            cursorDot.style.transform = 'translate(-50%, -50%) scale(1.5)';
         });
         
         el.addEventListener('mouseleave', () => {
             cursorOutline.style.width = '32px';
             cursorOutline.style.height = '32px';
             cursorOutline.style.borderColor = 'var(--primary-color)';
+            cursorDot.style.background = 'var(--primary-color)';
+            cursorDot.style.transform = 'translate(-50%, -50%) scale(1)';
         });
     });
 };
@@ -368,6 +381,8 @@ const initProjectsFilter = () => {
     const filterBtns = document.querySelectorAll('.filter-btn');
     const projectCards = document.querySelectorAll('.project-card');
     
+    if (filterBtns.length === 0 || projectCards.length === 0) return;
+    
     filterBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             // Remove active class from all buttons
@@ -377,19 +392,23 @@ const initProjectsFilter = () => {
             const filterValue = btn.getAttribute('data-filter');
             
             projectCards.forEach(card => {
-                if (filterValue === 'all' || card.getAttribute('data-category') === filterValue) {
-                    card.style.display = 'block';
-                    setTimeout(() => {
-                        card.style.opacity = '1';
-                        card.style.transform = 'scale(1)';
-                    }, 10);
-                } else {
-                    card.style.opacity = '0';
-                    card.style.transform = 'scale(0.8)';
-                    setTimeout(() => {
+                const category = card.getAttribute('data-category');
+                
+                // Animation de sortie
+                card.style.opacity = '0';
+                card.style.transform = 'scale(0.8)';
+                
+                setTimeout(() => {
+                    if (filterValue === 'all' || category === filterValue) {
+                        card.style.display = 'block';
+                        setTimeout(() => {
+                            card.style.opacity = '1';
+                            card.style.transform = 'scale(1)';
+                        }, 10);
+                    } else {
                         card.style.display = 'none';
-                    }, 300);
-                }
+                    }
+                }, 300);
             });
         });
     });
@@ -403,32 +422,112 @@ const initContactForm = () => {
     
     if (!form) return;
     
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
         e.preventDefault();
         
+        const submitBtn = form.querySelector('.btn-submit');
+        const originalText = submitBtn.innerHTML;
+        
+        // Désactiver le bouton et afficher un loader
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span>Envoi en cours...</span><i class="fas fa-spinner fa-spin"></i>';
+        
         const formData = new FormData(form);
-        const data = Object.fromEntries(formData);
+        const data = {
+            name: formData.get('name'),
+            email: formData.get('email'),
+            subject: formData.get('subject'),
+            message: formData.get('message')
+        };
         
-        // Simulation d'envoi
-        console.log('Form data:', data);
-        
-        // Créer le mailto link
-        const subject = encodeURIComponent(data.subject);
-        const body = encodeURIComponent(
-            `Nom: ${data.name}\nEmail: ${data.email}\n\nMessage:\n${data.message}`
-        );
-        const mailtoLink = `mailto:h.errabiao@outlook.fr?subject=${subject}&body=${body}`;
-        
-        // Ouvrir le client mail
-        window.location.href = mailtoLink;
-        
-        // Afficher un message de confirmation
-        alert('Votre client mail va s\'ouvrir pour envoyer le message.');
-        
-        // Reset form
-        form.reset();
+        try {
+            // Utiliser FormSubmit.co - service gratuit d'envoi d'email
+            // IMPORTANT: Remplacez 'YOUR_EMAIL' par votre vraie adresse email
+            const response = await fetch('https://formsubmit.co/h.errabiao@outlook.fr', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+            
+            if (response.ok) {
+                // Succès
+                submitBtn.innerHTML = '<span>Message envoyé !</span><i class="fas fa-check"></i>';
+                submitBtn.style.background = 'var(--success)';
+                
+                // Afficher un message de succès
+                showNotification('Message envoyé avec succès ! Je vous répondrai rapidement.', 'success');
+                
+                // Reset form
+                form.reset();
+                
+                // Restaurer le bouton après 3 secondes
+                setTimeout(() => {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.style.background = '';
+                }, 3000);
+            } else {
+                throw new Error('Erreur lors de l\'envoi');
+            }
+        } catch (error) {
+            console.error('Erreur:', error);
+            
+            // Fallback: ouvrir le client mail
+            const subject = encodeURIComponent(data.subject);
+            const body = encodeURIComponent(
+                `Nom: ${data.name}\nEmail: ${data.email}\n\nMessage:\n${data.message}`
+            );
+            const mailtoLink = `mailto:h.errabiao@outlook.fr?subject=${subject}&body=${body}`;
+            window.location.href = mailtoLink;
+            
+            showNotification('Ouverture de votre client mail...', 'info');
+            
+            // Restaurer le bouton
+            setTimeout(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }, 2000);
+        }
     });
 };
+
+// Fonction pour afficher des notifications
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+        <span>${message}</span>
+    `;
+    
+    notification.style.cssText = `
+        position: fixed;
+        top: 100px;
+        right: 20px;
+        background: ${type === 'success' ? 'var(--success)' : type === 'error' ? 'var(--error)' : 'var(--primary-color)'};
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-lg);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-weight: 600;
+        animation: slideInRight 0.3s ease;
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Supprimer après 5 secondes
+    setTimeout(() => {
+        notification.style.animation = 'slideOutRight 0.3s ease';
+        setTimeout(() => notification.remove(), 300);
+    }, 5000);
+}
 
 // ========================================
 // BACK TO TOP BUTTON
